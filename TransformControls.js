@@ -69,6 +69,7 @@ class GizmoLineMaterial extends THREE.LineBasicMaterial {
 }
 
 const pickerMaterial = new GizmoMaterial( { visible: false, transparent: false } );
+window.keyShortcut = null;
 
 class TransformGizmo extends THREE.Object3D {
 
@@ -647,36 +648,6 @@ export default class TransformControls extends THREE.Object3D {
         this.domElement.addEventListener( "touchend", this.onPointerUp.bind(this), false );
         this.domElement.addEventListener( "touchcancel", this.onPointerUp.bind(this), false );
         this.domElement.addEventListener( "touchleave", this.onPointerUp.bind(this), false );
-
-
-        window.addEventListener( 'keydown', ( event )=> {
-            switch ( event.keyCode ) {
-                case 81: // Q
-                    this.setSpace( this.space === "local" ? "world" : "local" );
-                    break;
-                case 17: // Ctrl
-                    this.setTranslationSnap( 100 );
-                    this.setRotationSnap( THREE.Math.degToRad( 15 ) );
-                    break;
-                case 87: // W
-                    this.setMode( "translate" );
-                    break;
-                case 69: // E
-                    this.setMode( "rotate" );
-                    break;
-                case 82: // R
-                    this.setMode( "scale" );
-                    break;
-                case 187:
-                case 107: // +, =, num+
-                    this.setSize( this.size + 0.1 );
-                    break;
-                case 189:
-                case 109: // -, _, num-
-                    this.setSize( Math.max( this.size - 0.1, 0.1 ) );
-                    break;
-            }
-        });
     }
 
     dispose() {
@@ -694,6 +665,10 @@ export default class TransformControls extends THREE.Object3D {
         this.domElement.removeEventListener( "touchend", this.onPointerUp.bind(this) );
         this.domElement.removeEventListener( "touchcancel", this.onPointerUp.bind(this) );
         this.domElement.removeEventListener( "touchleave", this.onPointerUp.bind(this) );
+
+        if(window.keyShortcut) {
+            window.removeEventListener( "keydown", window.keyShortcut );
+        }
 	}
 
     attach( object ) {
@@ -783,6 +758,35 @@ export default class TransformControls extends THREE.Object3D {
         this._gizmo[ this._mode ].highlight( this.axis );
 	}
 
+	keyShortcut( event ) {
+        switch ( event.keyCode ) {
+            case 81: // Q
+                this.setSpace( this.space === "local" ? "world" : "local" );
+                break;
+            case 17: // Ctrl
+                this.setTranslationSnap( 100 );
+                this.setRotationSnap( THREE.Math.degToRad( 15 ) );
+                break;
+            case 87: // W
+                this.setMode( "translate" );
+                break;
+            case 69: // E
+                this.setMode( "rotate" );
+                break;
+            case 82: // R
+                this.setMode( "scale" );
+                break;
+            case 187:
+            case 107: // +, =, num+
+                this.setSize( this.size + 0.1 );
+                break;
+            case 189:
+            case 109: // -, _, num-
+                this.setSize( Math.max( this.size - 0.1, 0.1 ) );
+                break;
+        }
+    }
+
     onPointerHover( event ) {
         if ( this.object === undefined || this._dragging === true || ( event.button !== undefined && event.button !== 0 ) ) return;
 
@@ -817,6 +821,16 @@ export default class TransformControls extends THREE.Object3D {
         if ( pointer.button === 0 || pointer.button === undefined ) {
 
             const intersect = this.intersectObjects( pointer, this._gizmo[ this._mode ].pickers.children );
+
+
+            const intersectObject = this.intersectObjects( pointer, [this.object] );
+            if ( intersectObject ) {
+                if(window.keyShortcut) {
+                    window.removeEventListener( "keydown", window.keyShortcut );
+                }
+                window.keyShortcut = this.keyShortcut.bind(this);
+                window.addEventListener( "keydown", window.keyShortcut, false );
+            }
 
             if ( intersect ) {
 
